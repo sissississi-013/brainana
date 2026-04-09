@@ -1,0 +1,158 @@
+"""Research report generator.
+
+Produces a markdown report with brain maps, score progressions,
+and the agent's reasoning trail.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+
+def generate_report(
+    objective: str,
+    target_region: str,
+    history: list[dict],
+    synthesis: dict | None = None,
+    output_dir: str | Path = "./outputs",
+) -> str:
+    """Generate a markdown research report from the experiment history.
+
+    Parameters
+    ----------
+    objective : The research question
+    target_region : Brain region being targeted
+    history : List of iteration dicts with keys:
+        iteration, stimulus, hypothesis, score, is_best, interpretation, brain_map_path
+    synthesis : Optional LLM-generated synthesis dict
+    output_dir : Directory to save the report
+
+    Returns
+    -------
+    str : Path to the generated report
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_path = output_dir / f"report_{timestamp}.md"
+
+    scores = [h["score"] for h in history]
+    best_idx = max(range(len(scores)), key=lambda i: scores[i])
+    best = history[best_idx]
+
+    lines = []
+    lines.append(f"# brainana Research Report")
+    lines.append("")
+    if synthesis:
+        lines.append(f"## {synthesis.get('title', 'Autonomous Neuroscience Discovery')}")
+    else:
+        lines.append(f"## Autonomous Discovery: {target_region}")
+    lines.append("")
+    lines.append(f"**Date**: {datetime.now().strftime('%B %d, %Y %H:%M')}")
+    lines.append(f"**Objective**: {objective}")
+    lines.append(f"**Target Region**: {target_region}")
+    lines.append(f"**Iterations**: {len(history)}")
+    lines.append(f"**Best Score**: {best['score']:.4f} (iteration {best_idx})")
+    lines.append("")
+
+    if synthesis:
+        lines.append("## Summary")
+        lines.append("")
+        lines.append(synthesis.get("abstract", ""))
+        lines.append("")
+        if "key_findings" in synthesis:
+            lines.append("### Key Findings")
+            lines.append("")
+            for finding in synthesis["key_findings"]:
+                lines.append(f"- {finding}")
+            lines.append("")
+        if "significance" in synthesis:
+            lines.append(f"**Significance**: {synthesis['significance']}")
+            lines.append("")
+
+    lines.append("## Score Progression")
+    lines.append("")
+    lines.append("![Score Progression](score_progression.png)")
+    lines.append("")
+
+    lines.append("## Best Stimulus Found")
+    lines.append("")
+    lines.append(f"**Iteration {best_idx}** (score: {best['score']:.4f})")
+    lines.append("")
+    lines.append(f"> {best['stimulus']}")
+    lines.append("")
+    lines.append(f"**Hypothesis**: {best['hypothesis']}")
+    lines.append("")
+    if best.get("brain_map_path"):
+        lines.append(f"![Best Brain Map]({Path(best['brain_map_path']).name})")
+        lines.append("")
+
+    lines.append("## Iteration Log")
+    lines.append("")
+    lines.append("| Iter | Score | Best? | Strategy |")
+    lines.append("|------|-------|-------|----------|")
+    for h in history:
+        best_marker = "**YES**" if h.get("is_best") else ""
+        strategy = ""
+        if isinstance(h.get("interpretation"), dict):
+            strategy = h["interpretation"].get("key_insight", "")[:60]
+        elif isinstance(h.get("interpretation"), str):
+            strategy = h["interpretation"][:60]
+        lines.append(
+            f"| {h['iteration']} | {h['score']:.4f} | {best_marker} | {strategy} |"
+        )
+    lines.append("")
+
+    lines.append("## Detailed Iteration History")
+    lines.append("")
+    for h in history:
+        is_best_str = " **[NEW BEST]**" if h.get("is_best") else ""
+        lines.append(f"### Iteration {h['iteration']}{is_best_str}")
+        lines.append("")
+        lines.append(f"**Score**: {h['score']:.4f}")
+        lines.append(f"**Hypothesis**: {h['hypothesis']}")
+        lines.append("")
+        lines.append(f"> {h['stimulus']}")
+        lines.append("")
+        if h.get("interpretation"):
+            interp = h["interpretation"]
+            if isinstance(interp, dict):
+                lines.append(f"**Interpretation**: {interp.get('interpretation', '')}")
+                lines.append(f"**Next direction**: {interp.get('next_direction', '')}")
+            else:
+                lines.append(f"**Interpretation**: {interp}")
+        lines.append("")
+        if h.get("brain_map_path"):
+            lines.append(f"![Iteration {h['iteration']}]({Path(h['brain_map_path']).name})")
+            lines.append("")
+        lines.append("---")
+        lines.append("")
+
+    lines.append("## Methodology")
+    lines.append("")
+    lines.append("This report was generated by **brainana**, an autoresearch agent that uses")
+    lines.append("brain response as the reward function. The agent generates text stimuli,")
+    lines.append("simulates brain response via TRIBE v2 (Meta's digital brain twin), extracts")
+    lines.append("ROI activation from the Destrieux atlas on fsaverage5, and iterates using")
+    lines.append("the Karpathy autoresearch pattern (propose -> evaluate -> keep/revert -> loop).")
+    lines.append("")
+    lines.append("**No human subjects were used.** All brain responses are in-silico predictions")
+    lines.append("from TRIBE v2, trained on 1000+ hours of fMRI from 720+ subjects.")
+    lines.append("")
+
+    if synthesis and "limitations" in synthesis:
+        lines.append("## Limitations")
+        lines.append("")
+        lines.append(synthesis["limitations"])
+        lines.append("")
+
+    report_text = "\n".join(lines)
+    report_path.write_text(report_text)
+    logger.info(f"Report saved to {report_path}")
+    return str(report_path)
