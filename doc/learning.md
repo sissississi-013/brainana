@@ -81,3 +81,32 @@ brainana/
 ### Moving to: Full demo runs + README + Colab notebook
 
 ---
+
+## Hour 3-4: Full Demos + Polish
+
+### Demo Runs Completed
+1. **Prefrontal cortex (10 iterations)**: Agent discovered moral dilemmas maximize PFC. Best score: 0.2772. Agent trajectory: workplace dilemma -> math reasoning (regression!) -> moral dilemma -> crisis management -> pandemic triage -> deception detection.
+2. **Language network (8 iterations)**: Agent explored different linguistic features. Best score: 0.1328.
+
+### Artifacts Created
+- README.md with full documentation, prior art table, architecture
+- Colab demo notebook (notebooks/demo.ipynb)
+- .gitignore, requirements.txt
+- All outputs in outputs/demo_prefrontal/ and outputs/demo_language/
+
+### Git Status
+- 2 commits on main branch
+- Ready to push to GitHub
+
+### What Worked Well
+- MockBrainSimulator makes development FAST (0s per iteration vs ~30-60s for TRIBE v2)
+- Claude generates excellent, diverse stimuli with good neuroscience reasoning
+- The autoresearch pattern transfers cleanly to neuroscience
+- Brain maps are visually compelling even with mock data
+
+### Next Steps
+- Push to GitHub
+- Test on Colab with TRIBE v2 (if time permits)
+- Prepare 3-minute presentation
+
+---
